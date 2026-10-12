@@ -95,12 +95,27 @@ module test_MCycle_post_synth #(parameter SIGNED_CYCLES = 16);
             end
             else if (Busy !== 1'b1)
                 $fatal(1, "Busy did not assert from idle");
-            wait (Busy === 1'b0);
+            begin : completion_watchdog
+                fork
+                    begin
+                        wait (Busy === 1'b0);
+                        disable completion_watchdog;
+                    end
+                    begin
+                        repeat (expected_cycles + 4) @(posedge CLK);
+                        #2;
+                        $fatal(1, "Operation stalled: completed_checks=%0d op=%b a=%h b=%h Busy=%b busy_cycles=%0d expected_cycles=%0d",
+                            checks, op, a, b, Busy, busy_cycles, expected_cycles);
+                    end
+                join
+            end
             #1;
             checks = checks + 1;
             if (Result1 !== expected1 || Result2 !== expected2 || busy_cycles != expected_cycles)
                 $fatal(1, "op=%b a=%h b=%h result=%h:%h expected=%h:%h cycles=%0d expected_cycles=%0d",
                     op, a, b, Result2, Result1, expected2, expected1, busy_cycles, expected_cycles);
+            if (checks % 100 == 0)
+                $display("PROGRESS: %0d result checks completed at %0t", checks, $time);
             completion_pending = hold;
             if (!hold) begin
                 Start = 0;

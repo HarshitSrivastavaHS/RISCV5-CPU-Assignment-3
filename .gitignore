@@ -17,3 +17,25 @@
 *~
 
 temp/
+
+# Generated reports, checkpoints and waveform data
+*.rpt
+*.rpx
+*.dcp
+*.wdb
+*.wcfg
+*.bit
+*.srcs/utils_1/
+
+# Submission copies and archives
+/Submission Info/
+/Group*_Asst3/
+/Group*_Asst3.zip
+
+# Website, presentations and documentation
+/task4/
+*.html
+*.ppt
+*.pptx
+*.pdf
+*.md
