@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#eef2f7">
+<title>Shift &amp; add vs Booth</title>
+<style>
+:root{color-scheme:light;--bg:#eef2f7;--panel:#fff;--line:#dbe3ed;--muted:#65748b;--cyan:#2563eb;--amber:#a9560b;--green:#087c52;--mono:Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1c2a40;font:14px Arial,Helvetica,sans-serif}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #2563eb;outline-offset:3px}::selection{background:#dce8ff}main{max-width:1280px;margin:auto;padding:20px 24px 24px}.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.page-head h1{margin:0;font-size:24px;letter-spacing:-.7px;font-weight:600}.page-head span{font-size:10px;letter-spacing:1px;color:var(--muted)}
+.inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 130px;gap:18px;padding:13px 18px 9px;border:1px solid var(--line);border-radius:10px;background:white}label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.8px;display:block;margin-bottom:6px}input{height:38px;background:#f8fafc;color:#182c46;border:1px solid #cfd9e5;border-radius:5px;padding:6px 10px;width:100%;font:20px var(--mono)}input:disabled{color:#4d6078}input[aria-invalid="true"]{border-color:#b45309}.input-bits{display:flex;flex-wrap:wrap;gap:3px 7px;font:11px var(--mono);margin-top:6px;color:#6c7c91}.input-bits .sign{color:#243b60}.error{font-size:11px;color:#ad4808;min-height:12px;margin:3px 0 0}.multiply{align-self:start;margin-top:18px;height:38px;background:#233b62;color:white;border:0;border-radius:6px;font-weight:600}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0}.controls{display:flex;gap:7px;flex-wrap:wrap}.controls button{border:1px solid #ccd7e6;border-radius:5px;background:#fff;color:#243752;height:34px;padding:0 12px;font-size:11px;font-weight:600}.controls button:not(:disabled):hover{background:#e3ecfc;border-color:#93afd9}#substep{color:#2563eb;border-color:#a8c2f2}.clock{display:flex;align-items:center;gap:12px;font:11px var(--mono);color:var(--muted)}.clock strong{color:#263e60;font-weight:500}.clock svg{width:75px;height:24px}.clock-path{fill:none;stroke:#ced8e5;stroke-width:1}.clock-lit{fill:none;stroke:#2563eb;stroke-width:1.5}.clock-dot{fill:#2563eb}
+.comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.algorithm{--accent:#2563eb;--soft:#edf4ff;border:1px solid #d2dff3;border-top:3px solid var(--accent);border-radius:10px;background:#fff;min-width:0;overflow:hidden;box-shadow:0 3px 12px #293a5510}#booth{--accent:#7540ca;--soft:#f5efff;border-color:#e2d7f3;border-top-color:var(--accent)}.algorithm.complete{border-color:#9acfb8;border-top-color:#087c52}.algorithm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:var(--soft);border-bottom:1px solid var(--line)}.algorithm h2{font-size:21px;font-weight:600;letter-spacing:-.5px;margin:2px 0}.algorithm-kind{color:var(--accent);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}.rate{font-size:11px;color:var(--muted);margin-top:4px}.rate b{color:var(--accent)}.count-block{text-align:right;white-space:nowrap}.count-block .count{font:25px var(--mono);color:var(--accent)}.count small{font-size:12px;color:#72829a}.count-label{font-size:9px;color:var(--muted);margin-top:3px}.stage-list{padding:0 18px}.stage{position:relative;padding:9px 0;border-bottom:1px solid #e9eef5;opacity:.6}.stage:last-child{border-bottom:0}.stage.active,.stage.past{opacity:1}.stage-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:7px;font-size:11px;font-weight:600;color:#62738b}.stage-title .number{display:inline-flex;align-items:center;justify-content:center;margin-right:6px;width:18px;height:18px;border:1px solid #cdd8e7;border-radius:50%;font:10px var(--mono);background:#f8fafc}.stage.active .number{color:white;background:var(--accent);border-color:var(--accent)}.cycle-caption{font-size:9px;font-weight:400;color:#6c7a8e}.bit-lane{display:flex;align-items:center;gap:3px;min-width:0;font:14px var(--mono)}.ellipsis{color:#8794a7;margin-right:3px;font-size:12px}.chip{height:26px;min-width:24px;display:inline-flex;align-items:center;justify-content:center;background:#f5f7fa;border:1px solid #dde5ef;border-radius:4px;color:#4e5f79}.chip.selected{background:var(--soft);color:var(--accent);border-color:var(--accent);font-weight:700}.chip.copy{background:#e7f4ed;color:#087c52;border-color:#a8d5bd}.previous{display:flex;align-items:center;gap:4px;margin-left:6px;border-left:1px solid #c5d2e4;padding-left:7px}.previous small{font:9px var(--mono);color:#62738b}.width-label{color:#748398;font-size:9px}.selection-flow{display:flex;align-items:center;gap:9px;margin-top:7px}.window{padding:3px 8px;border-radius:4px;border:1px solid var(--accent);background:var(--soft);font:13px var(--mono);letter-spacing:1px;color:var(--accent);min-width:35px;text-align:center}.selected-op{background:var(--soft);border:1px solid #dfe5ed;border-radius:5px;padding:4px 9px;color:var(--accent);font:12px var(--mono);min-width:62px}.selected-value{font:12px var(--mono);color:var(--accent);overflow-wrap:anywhere}.flow-link{position:relative;width:50px;height:20px;flex-shrink:0;display:flex;align-items:center}.flow-arrow{width:100%;height:15px;fill:none;stroke:#b4c3d7;stroke-width:1.5}.bit-token{position:absolute;left:0;font:10px var(--mono);background:var(--soft);color:var(--accent);padding:2px 3px;border-radius:3px;opacity:0;pointer-events:none}.connector{height:12px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:3px}.connector svg{height:12px;width:12px;stroke:#b8c8dc;stroke-width:1.5;fill:none}.value-token{position:absolute;left:50%;top:0;border-radius:3px;font:10px var(--mono);padding:2px 5px;background:var(--soft);color:var(--accent);opacity:0;pointer-events:none}.equation{font:clamp(16px,1.5vw,22px) var(--mono);line-height:1.4;color:#243954;overflow-wrap:anywhere;min-height:31px}.equation.long{font-size:13px}.calculation-result{color:var(--accent);font-weight:600}.calculate-meta{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#66758b;margin-top:1px;min-height:13px}.calculate-meta .wrap{color:#a34d0b}.shift-lines{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:8px;align-items:center}.shift-snapshot{min-width:0}.snapshot-label{font-size:9px;color:#77859a;margin-bottom:4px}.shift-lines .bit-lane{gap:2px;font-size:11px}.shift-lines .chip{min-width:18px;height:23px;border-radius:3px}.shift-lines .ellipsis{margin-right:1px}.shift-arrow svg{width:24px;height:16px;stroke:var(--accent);fill:none;stroke-width:1.8}.shift-after .bit-lane{will-change:transform}.shift-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#65758d;font:9px var(--mono);min-height:13px}.sign-copy{color:#087c52}.phase-meter{height:3px;background:#edf1f6;margin-top:7px;border-radius:2px}.phase-meter span{display:block;height:100%;background:var(--accent);width:0;border-radius:2px}.live-register{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 18px;border-top:1px solid var(--line);font:11px var(--mono);color:#667890;background:#fafbfd}.live-register strong{color:#223955;font-size:13px;font-weight:500;overflow-wrap:anywhere}.outcome{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:9px 18px;border-top:1px solid var(--line)}.badge{font-size:10px;color:#7a879a;font-weight:600}.product{font:20px var(--mono);color:#78859a;overflow-wrap:anywhere;text-align:right}.complete .outcome{background:#effaf4}.complete .badge,.complete .product{color:#087c52}.complete .phase-meter span{background:#087c52}
+.timeline{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 18px 14px;background:#fff}.timeline-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;font-size:11px;color:#5c6e87}.timeline-header strong{color:#087c52;font-weight:600}.timeline-grid{display:grid;grid-template-columns:80px minmax(0,1fr) 60px;gap:8px 10px;align-items:center;font:10px var(--mono)}.axis{display:flex;justify-content:space-between;color:#7b8aa0;font-size:9px;margin-bottom:3px}.track{height:16px;display:grid;grid-template-columns:repeat(64,minmax(0,1fr));gap:2px;position:relative}.track .cell{background:#eaf0fa;border-radius:2px}.track .cell.passed{background:#5486e0}.track.booth-track .cell.available{background:#efe7fc}.track.booth-track .cell.passed{background:#9470d0}.track .cell.held{background:#f4f5f8}.track .cursor{position:absolute;top:-3px;bottom:-3px;width:2px;background:#2d466d;pointer-events:none}.track .finish{position:absolute;top:-3px;bottom:-3px;border-left:2px solid #5273a4;pointer-events:none}.track .finish-label{position:absolute;top:-18px;font:8px Arial,sans-serif;white-space:nowrap;color:#48628b;transform:translateX(-50%);background:white;padding:0 3px}.track.booth-track .finish{border-color:#7540ca}.track.booth-track .finish-label{color:#7540ca}.timeline-label{color:#314968}.timeline-value{text-align:right;color:#677890}.timeline-value.done{color:#087c52;font-weight:700}.detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:10px}.details{border:1px solid var(--line);border-radius:7px;padding:10px 14px;background:#ffffffa8;min-width:0}.details summary{cursor:pointer;color:#65758b;font-size:11px}.detail-content{margin-top:13px;font:10px var(--mono);color:#68788e}.signals{display:flex;flex-wrap:wrap;gap:8px 13px;padding-bottom:10px;border-bottom:1px solid var(--line)}.signals b{color:#233c61;font-weight:500}.register{margin-top:12px}.reg-heading{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#65758d;margin-bottom:5px}.reg-value{color:#72829a;overflow-wrap:anywhere}.bit-rows{display:flex;flex-direction:column;gap:4px}.bit-line{display:flex;align-items:center;gap:8px;min-width:0}.bit-label{color:#7a8ba2;font-size:8px;width:40px;flex-shrink:0}.bit-groups{display:flex;flex-wrap:wrap;gap:3px 7px}.nibble{white-space:nowrap;font-size:11px;letter-spacing:.4px}.bit{color:#7d8da3}.bit.one{color:#263e61}.bit.changed{background:#e4f2eb;color:#087c52}.bit.selected{background:#dce9ff;color:#2563eb}.detail-note{color:#78889e;font-size:10px;line-height:1.6;margin:12px 0 0}.details h3{font-weight:500;font-size:10px;color:#2c466d;margin:16px 0 7px}.words{display:flex;flex-wrap:wrap;gap:9px 20px;margin-top:11px;font-size:10px}.words span{color:#7c8ba0;margin-right:6px}.recode-table{width:100%;border-collapse:collapse;font:10px var(--mono);margin-top:13px}.recode-table td,.recode-table th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.recode-table th{color:#7d8da2;font-weight:400}.recode-table .selected{color:#7540ca;background:#f0e9fc}.message{font-size:11px;color:#a34d0b;margin:8px 0 0}.message:empty{display:none}
+@media(max-width:1100px){.shift-lines{grid-template-columns:minmax(0,1fr) 24px}.shift-after{grid-column:1/-1}.shift-after .bit-lane{justify-content:flex-end}.shift-after .snapshot-label{text-align:right}.algorithm-head{padding:12px 15px}.stage-list{padding:0 15px}.chip{min-width:22px}.previous{margin-left:4px;padding-left:4px}}
+@media(max-width:760px){main{padding:16px}.page-head h1{font-size:21px}.inputs{grid-template-columns:1fr 1fr;gap:12px;padding:13px}.multiply{grid-column:1/-1;margin:0}.toolbar{flex-wrap:wrap}.clock{width:100%;justify-content:space-between}.comparison,.detail-grid{grid-template-columns:1fr;gap:14px}.stage-list{padding:0 16px}.equation{font-size:21px}.track{gap:1px}.timeline{padding:12px}.timeline-grid{grid-template-columns:66px minmax(0,1fr) 48px;gap:8px 7px}.timeline-header{font-size:10px}.input-bits{gap:3px 5px}.shift-lines{grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr)}.shift-after{grid-column:auto}.shift-after .snapshot-label{text-align:left}.shift-after .bit-lane{justify-content:flex-start}}
+@media(max-width:480px){.inputs{grid-template-columns:1fr}.multiply{grid-column:1}.chip{min-width:22px;height:26px}.bit-lane{gap:2px}.previous{margin-left:3px;padding-left:5px}.shift-lines{grid-template-columns:minmax(0,1fr) 24px}.shift-after{grid-column:1/-1}.shift-after .snapshot-label{text-align:right}.shift-after .bit-lane{justify-content:flex-end}.algorithm h2{font-size:19px}.equation.long{font-size:12px}.timeline-header{font-size:9px}.count-block .count{font-size:23px}.selected-value{font-size:11px}.controls button{padding:0 10px}}
+@media(max-width:350px){main{padding:12px 10px}.chip{min-width:20px}.previous{margin-left:2px;padding-left:3px}.ellipsis{margin-right:1px}.timeline-grid{grid-template-columns:58px minmax(0,1fr) 42px;gap:8px 5px}.algorithm h2{font-size:18px}.selection-flow{gap:6px}.flow-link{width:36px}.timeline-header{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.bit-token,.value-token{display:none}.shift-after .bit-lane{transform:none!important}}
+.history{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:white;padding:14px}.history summary{cursor:pointer;font-weight:600;font-size:13px}.history-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}.history-controls button{border:1px solid var(--line);background:#f8fafc;border-radius:5px;padding:6px 10px;color:#243752}.history-controls label{display:flex;align-items:center;gap:6px;margin:0;font-size:11px;letter-spacing:0}.history-controls input[type=checkbox]{width:15px;height:15px}.history-controls input[type=range]{flex:1;min-width:110px;width:auto;height:24px;padding:0}.history-snapshots{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.history-card{min-width:0;background:#f7faff;border:1px solid #d2dff3;border-radius:6px;padding:12px;font:11px var(--mono);line-height:1.7;overflow-wrap:anywhere}.history-card.booth-log{background:#faf7ff;border-color:#e2d7f3}.history-card h3{font:600 13px Arial;margin:0 0 8px;color:#2563eb}.history-card.booth-log h3{color:#7540ca}.history-card strong{color:#243752}.history-card details{margin-top:8px}.history-card summary{font:11px Arial;color:var(--muted)}.history-scroll{overflow:auto;max-height:270px;margin-top:12px}.history-table{width:100%;border-collapse:collapse;font:11px var(--mono);white-space:nowrap}.history-table th{position:sticky;top:0;background:#eef2f7;text-align:left;font-weight:500;color:#65748b}.history-table td,.history-table th{padding:7px 9px;border-bottom:1px solid var(--line)}.history-table tr.selected td{background:#e7efff}.history-table button{border:0;background:none;color:#2563eb;text-decoration:underline;font:inherit;padding:0}.history-empty{font-size:11px;color:var(--muted);margin:12px 0 0}@media(max-width:760px){.history-snapshots{grid-template-columns:1fr}.history-controls{gap:7px}}
+
+.comparison{align-items:start}.learn-start{grid-column:1/-1;display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);padding-top:10px}.learn-start button{border:1px solid #bca4df;background:#f5efff;color:#6332ad;border-radius:5px;padding:8px 12px;font-size:12px;font-weight:600;flex-shrink:0}.learn-start span{font-size:11px;color:var(--muted);line-height:1.5}.guided-help{font-size:12px;color:#4d6078;line-height:1.5;margin:0 0 12px}.guided-help strong{color:#6332ad}.explain{padding:10px 18px;border-bottom:1px solid var(--line);background:#fbfcfe;min-height:73px}.explain strong{display:block;font-size:12px;color:var(--accent);margin-bottom:5px}.explain p{font-size:12px;line-height:1.5;margin:0;color:#40546d}.why-choice{font-size:11px;line-height:1.5;margin:7px 0 0;color:#51667f}.digit-equation{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font:12px var(--mono);margin:7px 0 4px}.digit-equation .weighted{padding:4px 7px;background:var(--soft);border-radius:4px;color:var(--accent)}.hardware-path{margin-top:9px}.hardware-label{font-size:10px;color:var(--muted);margin-bottom:5px}.hardware-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 47px;gap:4px}.hardware-cell{padding:6px;background:#f5f7fb;border:1px solid #d9e2ee;border-radius:4px;min-width:0;font:11px var(--mono);overflow-wrap:anywhere}.hardware-cell small{display:block;font:9px Arial;color:#68788e;margin-bottom:4px}.hardware-row.after .hardware-cell{background:var(--soft);border-color:#d6c5ed}.hardware-shift{font-size:10px;color:#5f738e;margin:5px 0;line-height:1.5}.role-label{display:block;font:10px Arial;color:#63768e;margin-top:3px}.recoding{border:1px solid var(--line);background:white;border-radius:8px;padding:12px 16px;margin:12px 0}.recoding summary{font-size:12px;font-weight:600;cursor:pointer;color:#5d358f}.recoding p{font-size:12px;line-height:1.6;color:#4d6078;margin:9px 0}.recoding-strip{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0}.digit-pair{border:1px solid #ddd4ee;border-radius:4px;padding:5px 7px;font:12px var(--mono);background:#faf7ff;color:#735199}.digit-pair small{font:9px Arial;display:block;color:#73839a;margin-bottom:3px}.digit-pair.current{background:#7540ca;color:white;border-color:#7540ca}.digit-pair.current small{color:#e9dcff}.recoding-equality{font:12px var(--mono);overflow-wrap:anywhere;color:#344d70;line-height:1.7}.setup-tag{font-size:10px;color:var(--muted)}
+
+.format-choice{display:flex;align-items:center;gap:7px;margin:0;font-size:11px;letter-spacing:0}.format-choice select{padding:7px;border:1px solid #ccd7e6;border-radius:5px;background:white;color:#243752;font:11px Arial}.format-note{font-size:10px;color:var(--muted);margin:0 0 9px}@media(max-width:760px){.format-choice{margin-left:auto}}
+</style>
+</head>
+<body>
+<main>
+  <div class="page-head"><h1>Shift &amp; add <span style="color:#74839a">vs</span> Booth</h1><span>SIGNED · 32-BIT</span></div>
+  <form id="operand-form" class="inputs" novalidate>
+    <div><label for="operand-a">MULTIPLICAND · M</label><input id="operand-a" type="text" inputmode="text" value="7" spellcheck="false" autocomplete="off" aria-describedby="binary-a error-a"><div id="binary-a" class="input-bits" aria-label="Multiplicand in 32-bit binary"></div><p id="error-a" class="error" aria-live="polite"></p></div>
+    <div><label for="operand-b">MULTIPLIER · Q</label><input id="operand-b" type="text" inputmode="text" value="3" spellcheck="false" autocomplete="off" aria-describedby="binary-b error-b"><div id="binary-b" class="input-bits" aria-label="Multiplier in 32-bit binary"></div><p id="error-b" class="error" aria-live="polite"></p></div>
+    <button class="multiply" id="multiply" type="submit">Multiply →</button>
+    <div class="learn-start"><button id="guide-start" type="button">Walk me through →</button><span>Start paused. Use Next step to read, calculate, shift, then store.</span></div>
+  </form>
+  <div class="toolbar"><div class="controls"><button id="pause" type="button" disabled>Pause</button><button id="backstep" type="button" disabled>← Previous step</button><button id="substep" type="button" disabled>Next step</button><button id="step" type="button" disabled>Next cycle →</button><button id="reset" type="button">Reset</button></div><label class="format-choice" for="value-format">Values <select id="value-format"><option value="decimal">Decimal</option><option value="hex">Hexadecimal</option></select></label><div class="clock"><svg viewBox="0 0 120 28" aria-label="One clock cycle per second"><path class="clock-path" d="M0 6H60V22H120V6"/><path id="clock-trail" class="clock-lit" d="M0 6H0"/><circle id="clock-dot" class="clock-dot" cx="0" cy="6" r="2"/></svg><strong id="shared-cycle">Edge 0 / 64</strong><span>1 cycle = 1s</span></div></div>
+  <p class="format-note" id="format-note">Values are decimal. Highlighted bit strings stay binary.</p>
+  <p class="guided-help" id="guided-help">M is the number being multiplied. Q holds the multiplier’s bits. Each panel shows how hardware builds the product.</p>
+  <div class="comparison">
+    <article class="algorithm" id="original" aria-labelledby="original-heading"></article>
+    <article class="algorithm" id="booth" aria-labelledby="booth-heading"></article>
+  </div>
+  <details class="recoding" id="recoding"><summary>Why can Booth subtract and still multiply?</summary><p>Binary 11 is 3. Instead of 1 + 2, Booth writes it as −1 + 4. Signed digits (−2 to +2) express the same multiplier using two-bit groups.</p><div id="recoding-strip" class="recoding-strip"></div><div id="recoding-equality" class="recoding-equality">Start a multiplication to see your multiplier recoded.</div><p class="setup-tag">Each digit selects a multiple of M. Its position supplies a power of 4 through the two-bit shifts. The hardware processes digits from right to left.</p></details>
+  <section class="timeline" aria-label="Shared 64-cycle comparison">
+    <div class="timeline-header"><span>Completed cycles</span><strong>48 fewer cycles</strong></div>
+    <div class="timeline-grid"><span></span><div class="axis"><span>0</span><span>16</span><span>32</span><span>48</span><span>64</span></div><span></span><span class="timeline-label">Original</span><div class="track" id="original-track"></div><span class="timeline-value" id="original-timeline-value">0 / 64</span><span class="timeline-label">Booth</span><div class="track booth-track" id="booth-track"></div><span class="timeline-value" id="booth-timeline-value">0 / 16</span></div>
+  </section>
+  <div class="detail-grid"><details class="details" id="original-details"><summary>Original · Details</summary><div class="detail-content" data-detail="original"></div></details><details class="details" id="booth-details"><summary>Booth · Details</summary><div class="detail-content" data-detail="booth"></div></details></div>
+  <details class="history" id="cycle-history"><summary>Cycle log · Compare any completed cycle</summary><p class="history-empty" id="history-empty">Start a multiplication to record cycles.</p><div id="history-body" hidden><div class="history-controls"><button id="history-prev" type="button" aria-label="Previous logged cycle">←</button><strong id="history-cycle">Cycle 0</strong><button id="history-next" type="button" aria-label="Next logged cycle">→</button><input id="history-range" type="range" min="0" max="0" value="0" aria-label="Review completed cycle"><label><input id="history-follow" type="checkbox" checked>Follow live</label></div><div class="history-snapshots" id="history-snapshots"></div><div class="history-scroll"><table class="history-table"><thead><tr><th>Cycle</th><th>Original Q₀</th><th>Sum after add</th><th>Booth bits</th><th>Add to A</th><th>A after shift</th></tr></thead><tbody id="history-rows"></tbody></table></div></div></details>
+  <p id="play-status" class="message" role="status"></p>
+</main>
+<script>
+"use strict";
+const Multiplication = (() => {
+  const u = (width, value) => BigInt.asUintN(width, value);
+  const s = (width, value) => BigInt.asIntN(width, value);
+  const coefficients = [0n, 1n, 1n, 2n, -2n, -1n, -1n, 0n];
+  const operationNames = ["0", "+M", "+M", "+2M", "−2M", "−M", "−M", "0"];
+  function parseOperand(text) {
+    const value = text.trim();
+    if (!/^[+-]?\d+$/.test(value)) throw new Error("Enter a whole decimal number.");
+    const operand = BigInt(value);
+    if (operand < -2147483648n || operand > 2147483647n) throw new Error("Use −2,147,483,648 to 2,147,483,647.");
+    return operand;
+  }
+  function originalTrace(a, b) {
+    const frames = [{cycle:0, m:u(64,a), q:u(64,b), sum:0n, result:0n}];
+    for (let cycle = 1; cycle <= 64; cycle++) {
+      const before = frames[cycle-1];
+      const tested = Number(before.q & 1n);
+      const sum = u(64, before.sum + (tested ? before.m : 0n));
+      frames.push({cycle, m:u(64,before.m << 1n), q:before.q >> 1n, sum, result:sum, tested, before, addend:tested ? before.m : 0n});
+    }
+    return frames;
+  }
+  function boothTrace(a, b) {
+    const m = u(34,a);
+    const frames = [{cycle:0, m, p:u(32,b) << 1n, result:0n}];
+    for (let cycle = 1; cycle <= 16; cycle++) {
+      const before = frames[cycle-1];
+      const code = Number(before.p & 7n);
+      const addend = coefficients[code] * s(34,m);
+      const accumulator = u(34, (before.p >> 33n) + addend);
+      const adjusted = (accumulator << 33n) | u(33,before.p);
+      const p = u(67,s(67,adjusted) >> 2n);
+      frames.push({cycle, m, p, result:u(64,p >> 1n), code, coefficient:coefficients[code], addend, adjusted, before});
+    }
+    return frames;
+  }
+  function signals(edge, total, started) {
+    if (!started) return {busy:0, done:0, state:"IDLE", count:0};
+    return {busy:edge < total ? 1 : 0, done:edge === total ? 1 : 0, state:edge === 0 || edge > total ? "IDLE" : "COMPUTING", count:Math.min(edge,total)};
+  }
+  return {u, s, coefficients, operationNames, parseOperand, originalTrace, boothTrace, signals};
+})();
+globalThis.Multiplication = Multiplication;
+if (typeof document !== "undefined") {
+  const $ = id => document.getElementById(id);
+  const field = (panel,name) => panel.querySelector(`[data-field="${name}"]`);
+  const binary = (value,width) => Multiplication.u(width,value).toString(2).padStart(width,'0');
+  let valueFormat='decimal';
+  const hex = (value,width) => valueFormat==='hex' ? '0x'+Multiplication.u(width,value).toString(16).padStart(Math.ceil(width/4),'0').toUpperCase() : Multiplication.u(width,value).toString();
+  const signed = (value,width) => Multiplication.s(width,value);
+  const decimal = value => value.toString().replace('-','−');
+  const number = value => valueFormat==='hex' ? (value<0n?'−':'')+'0x'+(value<0n?-value:value).toString(16).toUpperCase() : decimal(value);
+  const digitTerm = value => value<0n ? '('+decimal(value)+')' : decimal(value);
+  const term = value => value < 0n ? '('+number(value)+')' : number(value);
+  const panels = [$('original'),$('booth')];
+  const inputs = [$('operand-a'),$('operand-b')];
+  const totals = [64,16];
+  const keys = ['', ''];
+  let started = false, running = false, inProgress = false;
+  let edge = 0, fraction = 0, phase = 0;
+  let traces = null, timer = null, animation = null, deadline = 0, remaining = 1000;
+  let valid = [true,true];
+  let guided = false;
+  let recodingKey='';
+  let historyEdge=0;
+  let reviewCycle = 0;
+  function arrow() {
+    return '<svg class="flow-arrow" viewBox="0 0 50 16" aria-hidden="true"><path d="M0 8H47M41 2l6 6-6 6"/></svg>';
+  }
+  function panelMarkup(index) {
+    const name=index===0 ? 'Shift &amp; add' : 'Radix-4 Booth';
+    const id=index===0 ? 'original' : 'booth';
+    const connector='<div class="connector"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v10M2 6l4 4 4-4"/></svg><span class="value-token" data-field="value-token"></span></div>';
+    return `<div class="algorithm-head"><div><div class="algorithm-kind">${index===0?'Original':'Enhanced'}</div><h2 id="${id}-heading">${name}</h2><div class="rate"><b>${index===0?'1 bit':'2 bits'}</b> / cycle</div></div><div class="count-block"><div class="count"><span data-field="visual-cycle">—</span><small> / ${totals[index]}</small></div><div class="count-label" data-field="cycle-status">Active cycle</div></div></div><div class="explain"><strong data-field="explain-title">Start with the multiplier</strong><p data-field="explain-body">${index===0?'Sum starts at 0. Q holds the multiplier; M holds the value to add.':'A starts at 0. Q holds the multiplier; q₋₁ starts at 0 and remembers one bit.'}</p></div><div class="stage-list"><section class="stage read" data-stage="0"><div class="stage-title"><span><span class="number">1</span>Test bits</span><span class="width-label">${index===0?'Q[7:0] · 64-bit Q':'Q[7:0] · 32-bit Q'}</span></div><div class="bit-lane" data-field="read-bits"></div><div class="selection-flow"><span class="window" data-field="window">—</span><span class="flow-link">${arrow()}<span class="bit-token" data-field="bit-token"></span></span><span class="selected-op" data-field="decision">${index===0?'M or 0':'0, ±M, ±2M'}</span><span class="selected-value" data-field="multiple">—</span></div><div class="why-choice" data-field="choice-why">${index===0?'A binary 1 means include this shifted copy of M.':'The three bits select a signed digit, then multiply it by M.'}</div><div data-field="digit-equation" class="digit-equation"></div>${connector}</section><section class="stage calculate" data-stage="1"><div class="stage-title"><span><span class="number">2</span>${index===0?'Add to sum':'Add to A'}</span><span>Next value</span></div><div class="equation" data-field="equation">—</div><div class="calculate-meta"><span>${index===0?'64-bit sum':'34-bit accumulator'}</span><span class="wrap" data-field="wrap"></span></div><div class="connector"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v10M2 6l4 4 4-4"/></svg></div></section><section class="stage shift" data-stage="2"><div class="stage-title"><span><span class="number">3</span>Shift ${index===0?'1 bit':'2 bits'}</span><span>${index===0?'Q right · M left':'A | Q | q₋₁ right'}</span></div><div class="shift-lines"><div class="shift-snapshot"><div class="snapshot-label" data-field="before-label">Before</div><div class="bit-lane" data-field="shift-before"></div></div><span class="shift-arrow">${arrow()}</span><div class="shift-snapshot shift-after"><div class="snapshot-label" data-field="after-label">After</div><div class="bit-lane" data-field="shift-after"></div></div></div><div class="shift-meta"><span data-field="shift-meta">—</span><span class="sign-copy" data-field="sign-copy"></span></div>${index===1?'<div class="hardware-path" data-field="hardware-path"></div>':''}<div class="phase-meter"><span data-field="phase-meter"></span></div></section></div><div class="live-register"><span>Stored ${index===0?'sum':'A'}<span class="role-label">${index===0?'Running total':'Working accumulator; not the product alone'}</span></span><strong data-field="stored">0</strong></div><div class="outcome"><span class="badge" data-field="badge">Ready</span><div class="product" data-field="product">—</div></div>`;
+  }
+  function lowBits(value,selected=[],unknown=false,previous) {
+    const bits = binary(value,8);
+    const old = previous === undefined ? bits : binary(previous,8);
+    return '<span class="ellipsis" title="Higher register bits omitted">…</span>'+Array.from(bits,(bit,i) => `<span class="chip ${selected.includes(7-i) ? 'selected' : ''} ${previous !== undefined && old[i] !== bit ? 'copy' : ''}">${unknown ? '·' : bit}</span>`).join('');
+  }
+  function fullBits(value,width,previous,selected=[]) {
+    const bits = binary(value,width);
+    const old = previous === undefined ? bits : binary(previous,width);
+    let html = '<div class="bit-rows">';
+    for (let start=0;start<width;start+=32) {
+      const length = Math.min(32,width-start);
+      html += `<div class="bit-line"><span class="bit-label">${width-start-1}:${width-start-length}</span><div class="bit-groups">`;
+      for (let group=0;group<length;group+=4) {
+        html += '<span class="nibble">';
+        for (let offset=0;offset<Math.min(4,length-group);offset++) {
+          const i=start+group+offset;
+          html += `<span class="bit ${bits[i] === '1' ? 'one' : ''} ${bits[i] !== old[i] ? 'changed' : ''} ${selected.includes(width-i-1) ? 'selected' : ''}">${bits[i]}</span>`;
+        }
+        html += '</span>';
+      }
+      html += '</div></div>';
+    }
+    return html+'</div>';
+  }
+  function register(name,value,width,previous) {
+    return `<div class="register"><div class="reg-heading"><span>${name} · ${width} bits</span><span class="reg-value">${name.includes('Q') || name==='q₋₁' ? hex(value,width) : number(signed(value,width))}</span></div>${fullBits(value,width,previous)}</div>`;
+  }
+  function validate(index) {
+    const suffix=index === 0 ? 'a' : 'b';
+    try {
+      const value=Multiplication.parseOperand(inputs[index].value);
+      $('binary-'+suffix).innerHTML=binary(value,32).match(/.{4}/g).map((part,i)=>`<span class="${i===0?'sign':''}">${part}</span>`).join('');
+      $('error-'+suffix).textContent='';
+      inputs[index].setAttribute('aria-invalid','false');
+      valid[index]=true;
+    } catch(error) {
+      $('binary-'+suffix).textContent='—';
+      $('error-'+suffix).textContent=error.message;
+      inputs[index].setAttribute('aria-invalid','true');
+      valid[index]=false;
+    }
+    $('multiply').disabled=started || !valid.every(Boolean);
+    $('guide-start').disabled=started || !valid.every(Boolean);
+  }
+  function renderDetails(index) {
+    const total=totals[index];
+    const frame=traces ? traces[index][Math.min(edge,total)] : (index===0 ? {m:0n,q:0n,sum:0n,result:0n} : {m:0n,p:0n,result:0n});
+    const signals=Multiplication.signals(edge,total,started);
+    const before=frame.before;
+    let html=`<div class="signals"><span>Busy <b data-field="busy">${signals.busy}</b></span><span>done <b data-field="done">${signals.done}</b></span><span>State <b data-field="state">${signals.state}</b></span><span>count <b data-field="count">${signals.count}</b></span></div><p class="detail-note">${started && edge===0 ? 'Setup preview; loaded with iteration 1 at edge 1.' : `Registers after edge ${edge}.`}</p>`;
+    if (index===0) {
+      html+=register('Shifted M',frame.m,64,before?.m)+register('Shifted Q',frame.q,64,before?.q)+register('Sum',frame.sum,64,before?.sum);
+      if(before) html+=`<h3>Before edge ${frame.cycle} · Q[0]</h3>${fullBits(before.q,64,undefined,[0])}`;
+    } else {
+      html+=register('M',frame.m,34,before?.m)+register('A',frame.p>>33n,34,before ? before.p>>33n : undefined)+register('Q',Multiplication.u(32,frame.p>>1n),32,before ? Multiplication.u(32,before.p>>1n) : undefined)+register('q₋₁',frame.p&1n,1,before ? before.p&1n : undefined);
+      if(before) html+=`<h3>Before edge ${frame.cycle} · P[2:0]</h3>${fullBits(before.p,67,undefined,[2,1,0])}<h3>After arithmetic · before shift</h3>${fullBits(frame.adjusted,67,before.p)}<h3>After shift</h3>${fullBits(frame.p,67,frame.adjusted)}`;
+      html+='<table class="recode-table"><thead><tr><th scope="col">Q₁ Q₀ q₋₁</th><th scope="col">Add to A</th></tr></thead><tbody>'+Multiplication.operationNames.map((op,i)=>`<tr class="${frame.code===i?'selected':''}"><td>${i.toString(2).padStart(3,'0')}</td><td>${op}</td></tr>`).join('')+'</tbody></table>';
+    }
+    html+=`<h3>${started && edge>=total ? 'Final product' : 'Partial output · not valid'}</h3><div>${number(signed(frame.result,64))}</div><div class="words"><div><span>Result2</span><b data-field="high">${hex(frame.result>>32n,32)}</b></div><div><span>Result1</span><b data-field="low">${hex(frame.result,32)}</b></div></div>${fullBits(frame.result,64)}<p class="detail-note">Result valid at edge ${total}; CPU writeback at edge ${total+1}. ${index===1 ? 'Result1 = P[32:1]; Result2 = P[64:33].' : '64-bit additions wrap modulo 2⁶⁴.'}</p>`;
+    document.querySelector(`[data-detail="${index===0?'original':'booth'}"]`).innerHTML=html;
+  }
+  function renderHistory() {
+    $('history-empty').hidden=started;
+    $('history-body').hidden=!started;
+    if(!started) return;
+    if($('history-follow').checked) reviewCycle=edge;
+    reviewCycle=Math.min(reviewCycle,historyEdge);
+    $('history-range').max=historyEdge;
+    $('history-range').value=reviewCycle;
+    $('history-cycle').textContent=`Cycle ${reviewCycle} / ${historyEdge}`;
+    $('history-prev').disabled=reviewCycle===0;
+    $('history-next').disabled=reviewCycle===historyEdge;
+    const cards=traces.map((trace,index)=> {
+      const cycle=Math.min(reviewCycle,totals[index]),frame=trace[cycle],before=frame.before;
+      const title=index===0 ? 'Original' : 'Radix-4 Booth';
+      let body='';
+      if(!before) body='<strong>Setup preview</strong><div>No iteration committed.</div>';
+      else if(index===0) body=`<div>Test Q₀: <strong>${frame.tested} → ${frame.tested ? 'Add M' : 'Add 0'}</strong></div><div>Sum: <strong>${number(signed(before.sum,64))} + ${term(signed(frame.addend,64))} = ${number(signed(frame.sum,64))}</strong></div><div>Q logical >> 1: ${hex(before.q,64)} → ${hex(frame.q,64)}</div><div>M << 1: ${number(signed(before.m,64))} → ${number(signed(frame.m,64))}</div>`;
+      else body=`<div>Test Q₁ Q₀ q₋₁: <strong>${binary(BigInt(frame.code),3)} → ${Multiplication.operationNames[frame.code]}</strong></div><div>A: <strong>${number(signed(before.p>>33n,34))} + ${term(frame.addend)} = ${number(signed(frame.adjusted>>33n,34))}</strong></div><div>Arithmetic shift A | Q | q₋₁ >> 2</div><div>A: <strong>${number(signed(frame.adjusted>>33n,34))} → ${number(signed(frame.p>>33n,34))}</strong></div><div>Q: ${hex(before.p>>1n,32)} → ${hex(frame.p>>1n,32)}</div><div>q₋₁: ${before.p&1n} → ${frame.p&1n} · copied sign: ${binary(frame.adjusted>>66n,1).repeat(2)}</div>`;
+      if(reviewCycle>totals[index]) body=`<strong>Finished at cycle ${totals[index]} · Registers held</strong>`;
+      if(reviewCycle>=totals[index]) body+=`<div>Product: <strong>${number(signed(frame.result,64))}</strong></div>`;
+      const raw=index===0 ? register('M',frame.m,64)+register('Q',frame.q,64)+register('Sum',frame.sum,64) : register('M',frame.m,34)+register('A',frame.p>>33n,34)+register('Q',frame.p>>1n,32)+register('q₋₁',frame.p&1n,1);
+      return `<article class="history-card ${index===1?'booth-log':''}" data-log="${index===0?'original':'booth'}"><h3>${title} · ${cycle} / ${totals[index]}</h3>${body}<details><summary>Full registers after this cycle</summary>${raw}</details></article>`;
+    });
+    $('history-snapshots').innerHTML=cards.join('');
+    $('history-rows').innerHTML=Array.from({length:historyEdge+1},(_,cycle)=> {
+      const o=traces[0][cycle],b=traces[1][Math.min(cycle,16)];
+      return `<tr class="${cycle===reviewCycle?'selected':''}"><td><button type="button" data-review="${cycle}" aria-label="Review cycle ${cycle}">${cycle}</button></td><td>${cycle ? o.tested : '—'}</td><td>${number(signed(o.sum,64))}</td><td>${cycle>16?'Held':cycle?binary(BigInt(b.code),3):'—'}</td><td>${cycle>16?'—':cycle?number(b.addend):'—'}</td><td>${number(signed(b.p>>33n,34))}</td></tr>`;
+    }).join('');
+  }
+  function review(cycle) {
+    $('history-follow').checked=false;
+    reviewCycle=Math.max(0,Math.min(historyEdge,cycle));
+    renderHistory();
+  }
+  function hardwareRow(p, label, after=false) {
+    const a=number(signed(p>>33n,34)),q=hex(p>>1n,32),prev=p&1n;
+    return `<div class="hardware-label">${label}</div><div class="hardware-row ${after?'after':''}"><div class="hardware-cell"><small>A · working sum · 34 bits</small>${a}</div><div class="hardware-cell"><small>Q · bit register · 32 bits</small>${q}</div><div class="hardware-cell"><small>q₋₁</small>${prev}</div></div>`;
+  }
+  function explainStep(index,frame,currentPhase) {
+    const panel=panels[index],complete=edge>=totals[index];
+    let title,body;
+    if(complete) {
+      title='Finished · read the product';
+      body=index===0 ? 'The 64-bit sum is the product. This register now holds its value.' : 'Join A and Q; keep their low 64 bits. Drop q₋₁, which was only used for recoding. A alone is not the product.';
+    } else if(index===0) {
+      const bit=frame.tested;
+      title=['1 · Decide whether this bit contributes','2 · Build the running total','3 · Move to the next binary position','Clock edge · store the new values'][currentPhase];
+      body=[`The highlighted bit is ${bit}. ${bit?'A 1 includes the current shifted M.':'A 0 contributes nothing; the sum stays the same.'}`,`Add ${number(signed(frame.addend,64))} to the stored sum. This is the adder’s next value, before it is stored.`,`Q moves right to expose the next bit. M moves left, doubling its weight for that bit.`,`The clock stores the sum and both shifted operands. ${64-frame.cycle} iterations remain.`][currentPhase];
+    } else {
+      title=['1 · Recode this pair of multiplier bits','2 · Add the selected signed multiple','3 · Shift A, Q and the previous bit together','Clock edge · store the new values'][currentPhase];
+      body=[`Read Q₁ Q₀ q₋₁ = ${frame.code.toString(2).padStart(3,'0')}. These bits encode ${decimal(frame.coefficient)}, so select ${Multiplication.operationNames[frame.code]}.`,`M = ${number(signed(frame.m,34))}. The selected multiple is ${number(frame.addend)}; add it to A. A is the working accumulator, not the finished product.`,`Move the whole A | Q | q₋₁ register right by two. A’s low bits enter Q; Q₁ becomes the new previous bit. Copy the sign into A’s left end.`,`The clock stores A, Q and q₋₁ together. ${16-frame.cycle} two-bit iterations remain.`][currentPhase];
+    }
+    field(panel,'explain-title').textContent=title;
+    field(panel,'explain-body').textContent=body;
+    if(index===0) {
+      field(panel,'choice-why').textContent=`Q₀ = ${frame.tested}: ${frame.tested?'include':'skip'} this copy of M.`;
+    } else {
+      const bits=frame.code.toString(2).padStart(3,'0');
+      field(panel,'digit-equation').innerHTML=`<span class="weighted">−2 × ${bits[0]}</span> + <span class="weighted">1 × ${bits[1]}</span> + <span class="weighted">1 × ${bits[2]}</span> = <strong>${decimal(frame.coefficient)}</strong>`;
+      field(panel,'choice-why').textContent='These are the three bit weights: the left bit can subtract; the middle and previous bits can add.';
+      field(panel,'hardware-path').innerHTML=hardwareRow(currentPhase>=1?frame.adjusted:frame.before.p,currentPhase>=1?'After addition · before shift':'Stored registers · before addition')+`<div class="hardware-shift">Sign <b>${(frame.adjusted>>66n)===1n?'11':'00'}</b> → A &nbsp; · &nbsp; A’s low bits <b>${binary(frame.adjusted>>33n,2)}</b> → Q &nbsp; · &nbsp; Q₁ <b>${(frame.before.p>>2n)&1n}</b> → q₋₁</div>`+(currentPhase>=2 ? hardwareRow(frame.p,currentPhase===3?'Stored at this edge':'After shifting · ready to store',true) : '<div class="hardware-label">Next step reveals the shifted registers.</div>');
+    }
+  }
+  function renderRecoding() {
+    if(!traces) {
+      recodingKey='';
+      $('recoding-strip').innerHTML='';
+      $('recoding-equality').textContent='Start a multiplication to see your multiplier recoded.';
+      return;
+    }
+    const active=Math.min(16,edge+(inProgress?1:0));
+    const key=inputs[1].value+':'+active+':'+valueFormat;
+    if(recodingKey===key) return;
+    recodingKey=key;
+    $('recoding-strip').innerHTML=Array.from({length:16},(_,j)=>{
+      const i=15-j,coefficient=traces[1][i+1].coefficient;
+      return `<span class="digit-pair ${active===i+1?'current':''}"><small>${(traces[1][i+1].code>>1).toString(2).padStart(2,'0')}₂ · 4<sup>${i}</sup></small>${decimal(coefficient)}</span>`;
+    }).join('');
+    const terms=traces[1].slice(1).map((frame,i)=>({coefficient:frame.coefficient,i})).filter(t=>t.coefficient!==0n).reverse();
+    const b=Multiplication.parseOperand(inputs[1].value);
+    $('recoding-equality').innerHTML=`${number(b)} = ${terms.length ? terms.map(t=>`${digitTerm(t.coefficient)} × 4<sup>${t.i}</sup>`).join(' + ') : '0'}`;
+  }
+
+  function renderOperation(index,visualPhase) {
+    if(!started) return;
+    const total=totals[index];
+    const complete=edge>=total;
+    const cycle=complete ? total : (inProgress ? edge+1 : edge);
+    if(cycle<1) return;
+    const currentPhase=complete ? 3 : visualPhase;
+    const key=`${cycle}:${currentPhase}:${complete}`;
+    const panel=panels[index];
+    if(keys[index]!==key) {
+      keys[index]=key;
+      const frame=traces[index][cycle];
+      const before=frame.before;
+      explainStep(index,frame,currentPhase);
+      const ready=currentPhase>=1;
+      const shifted=currentPhase>=2;
+      field(panel,'visual-cycle').textContent=cycle;
+      field(panel,'cycle-status').textContent=currentPhase===3 ? 'Cycle complete' : 'Active cycle';
+      for(const stage of panel.querySelectorAll('[data-stage]')) {
+        const stageIndex=Number(stage.dataset.stage);
+        stage.classList.toggle('active',currentPhase===stageIndex);
+        stage.classList.toggle('past',currentPhase>stageIndex);
+      }
+      let left,addend,result,shiftBefore,shiftAfter,afterA;
+      if(index===0) {
+        field(panel,'read-bits').innerHTML=lowBits(before.q,[0]);
+        field(panel,'window').textContent=frame.tested;
+        field(panel,'bit-token').textContent=frame.tested;
+        field(panel,'decision').textContent=frame.tested ? 'Add M' : 'Add 0';
+        left=signed(before.sum,64); addend=signed(frame.addend,64); result=signed(frame.sum,64);
+        shiftBefore=before.q; shiftAfter=frame.q;
+        field(panel,'before-label').textContent='Before · Q';
+        field(panel,'multiple').textContent=`= ${number(addend)}`;
+        field(panel,'value-token').textContent=number(addend);
+        field(panel,'wrap').textContent=left+addend!==result ? '64-bit wrap' : '';
+        field(panel,'shift-meta').textContent=`M ← 1: ${number(signed(before.m,64))} → ${shifted ? number(signed(frame.m,64)) : '—'}`;
+        field(panel,'sign-copy').textContent='Logical shift · insert 0';
+      } else {
+        const q=Multiplication.u(32,before.p>>1n),previous=before.p&1n;
+        field(panel,'read-bits').innerHTML=lowBits(q,[1,0])+`<span class="previous"><span class="chip selected">${previous}</span><small>q₋₁</small></span>`;
+        const op=Multiplication.operationNames[frame.code];
+        field(panel,'window').textContent=frame.code.toString(2).padStart(3,'0');
+        field(panel,'bit-token').textContent=frame.code.toString(2).padStart(3,'0');
+        field(panel,'decision').textContent=op;
+        left=signed(before.p>>33n,34); addend=frame.addend; result=signed(frame.adjusted>>33n,34);
+        shiftBefore=frame.adjusted; shiftAfter=frame.p;
+        afterA=number(signed(frame.p>>33n,34));
+        field(panel,'before-label').textContent=`Before · A ${number(result)}`;
+        field(panel,'multiple').textContent=`= ${number(addend)}`;
+        field(panel,'value-token').textContent=number(addend);
+        field(panel,'wrap').textContent='';
+        field(panel,'shift-meta').textContent='P[7:0] · 67-bit A | Q | q₋₁';
+        const sign=Number(frame.adjusted>>66n);
+        field(panel,'sign-copy').textContent=`Sign ${sign} → ${shifted ? String(sign).repeat(2) : '—'}`;
+      }
+      const equation=`${number(left)} + ${term(addend)} = ${ready ? number(result) : '—'}`;
+      field(panel,'equation').innerHTML=`${number(left)} + ${term(addend)} = <span class="calculation-result">${ready ? number(result) : '—'}</span>`;
+      field(panel,'after-label').textContent=shifted ? (index===1 ? `${currentPhase===3 ? 'After' : 'Next'} · A ${afterA}` : (currentPhase===3 ? 'After · Q' : 'Next · Q')) : 'After · pending';
+      field(panel,'equation').classList.toggle('long',equation.length>32);
+      field(panel,'shift-before').innerHTML=lowBits(shiftBefore);
+      field(panel,'shift-after').innerHTML=lowBits(shiftAfter,[],!shifted,shifted ? shiftBefore : undefined);
+    }
+    const progress=complete || !inProgress ? 1 : fraction;
+    field(panel,'phase-meter').style.width=`${progress*100}%`;
+    const movement=currentPhase===2 ? Math.max(0,1-(fraction-2/3)*3) : 0;
+    field(panel,'shift-after').style.transform=`translateX(${-movement*(index===0 ? 18 : 36)}px)`;
+    const token=field(panel,'bit-token');
+    const valueToken=field(panel,'value-token');
+    if(currentPhase===3) {
+      token.style.opacity='0';
+      token.style.transform='translateX(0px)';
+      valueToken.style.opacity='0';
+      valueToken.style.transform='translate(-50%,0px)';
+      return;
+    }
+    const travel=token.parentElement.clientWidth;
+    token.style.opacity=currentPhase===0 ? Math.sin(fraction*3*Math.PI).toString() : '0';
+    token.style.transform=`translateX(${Math.min(1,fraction*3)*Math.max(0,travel-token.clientWidth)}px)`;
+    const valueProgress=Math.max(0,Math.min(1,(fraction-1/3)*3));
+    valueToken.style.opacity=currentPhase===1 ? Math.sin(valueProgress*Math.PI).toString() : '0';
+    valueToken.style.transform=`translate(-50%,${valueProgress*36}px)`;
+  }
+
+  function paintClock(value) {
+    const x=Math.max(0,Math.min(120,value*120));
+    $('clock-dot').setAttribute('cx',x);
+    $('clock-dot').setAttribute('cy',x<60 || x===120 ? 6 : 22);
+    let path='M0 6';
+    if(x>=60) path+='H60V22';
+    if(x===120) path+='H120V6';
+    $('clock-trail').setAttribute('d',path+`H${x}`);
+    for(const track of [$('original-track'),$('booth-track')]) track.querySelector('.cursor').style.left=`${Math.min(64,edge+(inProgress ? value : 0))/64*100}%`;
+  }
+  function controls() {
+    $('pause').disabled=!started || edge>=64;
+    $('pause').textContent=running ? 'Pause' : 'Resume';
+    $('step').disabled=!started || running || edge>=64;
+    $('substep').disabled=!started || running || edge>=64;
+    $('backstep').disabled=!started || running || (edge===0 && !inProgress);
+    panels.forEach((panel,index)=> {
+      field(panel,'badge').textContent=started && edge>=totals[index] ? 'Done · Product' : (started ? (running ? 'Working' : 'Paused') : 'Ready');
+    });
+  }
+  function renderCommitted() {
+    $('shared-cycle').textContent=`Edge ${edge} / 64`;
+    panels.forEach((panel,index)=> {
+      const total=totals[index],complete=started && edge>=total;
+      const frame=traces ? traces[index][Math.min(edge,total)] : null;
+      field(panel,'stored').textContent=frame ? number(signed(index===0 ? frame.sum : frame.p>>33n,index===0 ? 64 : 34)) : '0';
+      panel.classList.toggle('complete',complete);
+      field(panel,'product').textContent=complete ? number(signed(traces[index][total].result,64)) : '—';
+      const track=$(index===0 ? 'original-track' : 'booth-track');
+      track.querySelectorAll('.cell').forEach((cell,i)=>cell.classList.toggle('passed',started && i<Math.min(edge,total)));
+      const value=$(index===0 ? 'original-timeline-value' : 'booth-timeline-value');
+      value.textContent=`${Math.min(edge,total)} / ${total}`;
+      value.classList.toggle('done',complete);
+      renderDetails(index);
+    });
+    controls();
+    renderHistory();
+  }
+  function paintPhase(value) {
+    fraction=value;
+    phase=inProgress ? Math.min(2,Math.floor(value*3)) : 3;
+    renderOperation(0,phase);
+    renderOperation(1,phase);
+    paintClock(value);
+    renderRecoding();
+  }
+  function stopTimers() {
+    clearTimeout(timer);
+    cancelAnimationFrame(animation);
+    timer=null; animation=null;
+  }
+  function animate() {
+    if(!running) return;
+    paintPhase(Math.max(0,Math.min(1,1-(deadline-performance.now())/1000)));
+    animation=requestAnimationFrame(animate);
+  }
+  function advance() {
+    if(!started || edge>=64) return;
+    edge++; historyEdge=Math.max(historyEdge,edge); inProgress=false;
+    if(edge===64) running=false;
+    renderCommitted();
+    paintPhase(1);
+  }
+  function schedule() {
+    inProgress=true;
+    deadline=performance.now()+remaining;
+    paintPhase(1-remaining/1000);
+    timer=setTimeout(()=> {
+      if(!running) return;
+      stopTimers();
+      advance();
+      remaining=1000;
+      if(running) schedule();
+    },remaining);
+    animation=requestAnimationFrame(animate);
+  }
+  function pause(message='') {
+    if(!running) return;
+    remaining=Math.max(0,Math.min(1000,deadline-performance.now()));
+    running=false;
+    stopTimers();
+    paintPhase(1-remaining/1000);
+    controls();
+    $('play-status').textContent=message;
+  }
+  function initialize() {
+    panels.forEach((panel,index)=> {
+      panel.innerHTML=panelMarkup(index);
+      const initialQ=traces ? (index===0?traces[0][0].q:traces[1][0].p>>1n) : 0n;
+      field(panel,'read-bits').innerHTML=lowBits(initialQ,index===0 ? [0] : [1,0])+(index===1 ? '<span class="previous"><span class="chip selected">0</span><small>q₋₁</small></span>' : '');
+      field(panel,'visual-cycle').textContent=started?'0':'—';
+      field(panel,'cycle-status').textContent='Setup preview';
+      field(panel,'shift-before').innerHTML=lowBits(0n);
+      field(panel,'shift-after').innerHTML=lowBits(0n,[],true);
+      const total=totals[index];
+      $(index===0 ? 'original-track' : 'booth-track').innerHTML=Array.from({length:64},(_,i)=>`<span class="cell ${i<total ? 'available' : 'held'}"></span>`).join('')+`<span class="finish" style="left:${total/64*100}%" title="Finish at cycle ${total}"></span><span class="finish-label" style="left:${total/64*100}%;${index===0?'transform:translateX(-100%)':''}">Finish ${total}</span><span class="cursor" style="left:0"></span>`;
+      keys[index]='';
+    });
+    renderCommitted();
+    paintClock(0);
+  }
+  function startMultiplication(asGuide=false) {
+    if(started) return;
+    validate(0); validate(1);
+    if(!valid.every(Boolean)) return;
+    const a=Multiplication.parseOperand(inputs[0].value),b=Multiplication.parseOperand(inputs[1].value);
+    traces=[Multiplication.originalTrace(a,b),Multiplication.boothTrace(a,b)];
+    const expected=Multiplication.u(64,a*b);
+    if(traces[0][64].result!==expected || traces[1][16].result!==expected) {
+      $('play-status').textContent='Arithmetic check failed.';
+      return;
+    }
+    historyEdge=0; guided=asGuide; started=true; running=!guided; edge=0; remaining=1000;
+    inputs.forEach(input=>input.disabled=true);
+    $('multiply').disabled=true;
+    $('guide-start').disabled=true;
+    $('play-status').textContent='';
+    $('guided-help').innerHTML=guided ? '<strong>Follow the highlighted stage.</strong> Next step reveals the calculation, then the shift. The next click stores the values at the clock edge. Resume plays automatically.' : 'The highlighted stage shows what happens next. Pause to inspect it; Next step reveals one phase at a time.';
+    renderCommitted();
+    if(guided) {inProgress=true; paintPhase(0); controls();} else schedule();
+  }
+  $('operand-form').addEventListener('submit',event=> {event.preventDefault(); startMultiplication();});
+  $('guide-start').addEventListener('click',()=>startMultiplication(true));
+  $('pause').addEventListener('click',()=> {
+    if(running) pause();
+    else if(started && edge<64) {
+      running=true;
+      $('play-status').textContent='';
+      controls(); schedule();
+    }
+  });
+  $('step').addEventListener('click',()=> {
+    if(running || !started || edge>=64) return;
+    remaining=1000;
+    advance();
+    $('play-status').textContent='';
+  });
+  $('substep').addEventListener('click',()=> {
+    if(running || !started || edge>=64) return;
+    if(!inProgress) {
+      inProgress=true;
+      remaining=1000;
+      paintPhase(0);
+    } else if(phase<2) {
+      const nextFraction=(phase+1)/3;
+      remaining=1000*(1-nextFraction);
+      paintPhase(nextFraction);
+    } else {
+      remaining=1000;
+      advance();
+    }
+    controls();
+    $('play-status').textContent='';
+  });
+  $('backstep').addEventListener('click',()=> {
+    if(running || !started || (edge===0 && !inProgress)) return;
+    if(!inProgress) {
+      edge--; inProgress=true; fraction=2/3;
+    } else if(phase>0) {
+      fraction=(phase-1)/3;
+    } else {
+      inProgress=false; fraction=1;
+    }
+    remaining=inProgress ? 1000*(1-fraction) : 1000;
+    keys.fill('');
+    if(edge===0 && !inProgress) initialize();
+    else renderCommitted();
+    paintPhase(inProgress ? fraction : (edge===0?0:1));
+    controls();
+    $('play-status').textContent='';
+  });
+  $('value-format').addEventListener('change',()=> {
+    valueFormat=$('value-format').value;
+    $('format-note').textContent=valueFormat==='hex' ? 'Hex values start with 0x; a minus sign means negative. Highlighted bit strings stay binary.' : 'Values are decimal. Highlighted bit strings stay binary.';
+    keys.fill(''); recodingKey='';
+    if(edge===0 && !inProgress) initialize();
+    else renderCommitted();
+    paintPhase(fraction);
+  });
+  $('reset').addEventListener('click',()=> {
+    running=false; started=false; inProgress=false; edge=0; fraction=0; phase=0; traces=null; remaining=1000; historyEdge=0;
+    stopTimers();
+    inputs.forEach(input=>input.disabled=false);
+    $('play-status').textContent='';
+    guided=false;
+    $('guide-start').disabled=false;
+    $('guided-help').textContent='M is the number being multiplied. Q holds the multiplier’s bits. Each panel shows how hardware builds the product.';
+    renderRecoding();
+    reviewCycle=0;
+    $('history-follow').checked=true;
+    $('original-details').open=false;
+    $('booth-details').open=false;
+    initialize(); validate(0); validate(1);
+  });
+  $('history-prev').addEventListener('click',()=>review(reviewCycle-1));
+  $('history-next').addEventListener('click',()=>review(reviewCycle+1));
+  $('history-range').addEventListener('input',()=>review(Number($('history-range').value)));
+  $('history-follow').addEventListener('change',renderHistory);
+  $('history-rows').addEventListener('click',event=> {
+    const button=event.target.closest('[data-review]');
+    if(button) review(Number(button.dataset.review));
+  });
+  inputs.forEach((input,index)=>input.addEventListener('input',()=>validate(index)));
+  document.addEventListener('visibilitychange',()=> {
+    if(document.hidden) pause('Tab hidden · Paused');
+  });
+  initialize(); validate(0); validate(1);
+}
+
+</script>
+</body>
+</html>

@@ -34,7 +34,6 @@ temp/
 
 # Website, presentations and documentation
 /task4/
-*.html
 *.ppt
 *.pptx
 *.pdf
